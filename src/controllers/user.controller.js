@@ -52,9 +52,9 @@ const login = async (req, res)=>{
              return   res.status(400).json({
                     message: "user not found"
                 })}
-            if(!user.isVerified){
-                return res.status(401).json({message: "User not verified"})
-            }
+            // if(!user.isVerified){
+            //     return res.status(401).json({message: "User not verified"})
+            // }
 
                 const comparePassword = await bcrypt.compare(password, user.password)
             if(!comparePassword){
@@ -85,7 +85,7 @@ const forgetPassword = async (req, res)=>{
         }
         const user = await User.findOne({email});
         if(!user){
-          return res.status(400).json({message: "User not found"})
+          return res.status(404).json({message: "User not found"})
         }
         const otp = Math.floor(100000 * Math.random() + 90000).toString();
         user.otp = otp;
@@ -97,58 +97,87 @@ const forgetPassword = async (req, res)=>{
     }
 }
 
-const resetPassword = async (req, res)=> {
-    const {otp, newPassword } = req.body;
-try{
-    if(!otp || !newPassword){
-        return res.status(404).json({
-            message: "All fields are required"
-        })
-    }
-    const user = await User.findOne({otp});
-    if(!user){
-        return res.status(404).json({message: "User not found"})
-    }
+// const resetPassword = async (req, res)=> {
+//     const {otp, newPassword } = req.body;
+// try{
+//     if(!otp || !newPassword){
+//         return res.status(404).json({
+//             message: "All fields are required"
+//         })
+//     }
+//     const user = await User.findOne({otp});
+//     if(!user){
+//         return res.status(404).json({message: "User not found"})
+//     }
+//     if(user.otpExpiry < Date.now()){
+//        return res.status(400).json({message: "Otp has Expired"}) 
+//     }
+//     if(user.otp !== otp){
+//         return res.status(400).json({message: "Invalid otp"})
+//     }
     
-    const hashPassword = await bcrypt.hash(newPassword, 10)
-    user.otpExipry = new Date.now()
-    user.password = hashPassword;
-    user.otp = null;
-    await user.save();
-    return res.status(200).json({message: "Password reset successfully"})
-}catch(e){
-    console.error('error during reset password' , e)
-    return res.status(500).json({message: "Server error"})
-}
+//     const hashPassword = await bcrypt.hash(newPassword, 10)
+//     user.password = hashPassword;
+//     user.otp = null;
+//     user.otpExpiry = null;
+//     await user.save();
+//     return res.status(200).json({message: "Password reset successfully"})
+// }catch(e){
+//     console.error('error during reset password' , e)
+//     return res.status(500).json({message: "Server error"})
+// }
     
-}
+// }
 
-const verifyOtp = async (req, res)=>{
-    const {otp} = req.body;
+// const verifyOtp = async (req, res)=>{
+//     const {otp} = req.body;
+//     try {
+//         if(!otp){
+//             return res.status(404).json({
+//             message: "All fields are required"
+//         })
+//         }
+//         const user = await User.findOne({otp});
+//         if(!user){
+//             return res.status(404).json({message: "User not found"})
+//         }
+//         const userOtpExpiry =  await user.otpExipry;
+//         if(userOtpExpiry < Date.now()){
+//         return res.status(400).json({message: "Otp has Expired"})
+//         }
+//         // user.isVerified = true;
+//         user.otp=null;
+//         user.otpExpiry= null;
+//         await user.save();
+//         return res.status(200).json({message: "User verified successfully"})
+
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({message: "Server error"})
+//     }
+// }
+const resetPassword = async(req, res)=>{
+    const {email} = req.body;
     try {
-        if(!otp){
-            return res.status(404).json({
-            message: "All fields are required"
-        })
+        if(!email){
+            return res.status(400).json({
+                message:"Invalid email"
+            })
         }
-        const user = await User.findOne({otp});
+        const user = await User.findOne({email});
         if(!user){
-            return res.status(404).json({message: "User not found"})
+            return res.status(404).json({message: "user not found"})
         }
-        const userOtpExpiry =  await user.otpExipry;
-        if(userOtpExpiry < Date.now){
-        return res.status(400).json({message: "Otp has Expired"})
-        }
-        user.isVerified = true;
-        user.otp=null;
-        user.otpExpiry= null;
-        await user.save();
-        return res.status(200).json({message: "User verified successfully"})
-
+        const otp = Math.floor(100000 * Math.random() + 90000).toString();
+        const otpExpiry = new Date(Date.now() + 30 * 60 * 1000 );
+         user.otp = otp;
+         user.otpExpiry =otpExpiry;
+         await user.save(); 
+         return res.status(200).json({message: "Otp sent successfully"})
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({message: "Server error"})
+        console.log(error)
+        return res.status(500).json({message: "server error"})
     }
 }
 
-module.exports= {signup, login, forgetPassword, resetPassword, verifyOtp}
+module.exports= {signup, login, forgetPassword, resetPassword, /*verifyOtp, sendOtp*/}
