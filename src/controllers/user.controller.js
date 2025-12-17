@@ -1,6 +1,8 @@
 // const express = require('express');
-const bcrypt = require('bcrypt')
-const User = require("../models/user.model")
+const bcrypt = require('bcrypt');
+const User = require("../models/user.model");
+const jwt = require("jsonwebtoken");
+require('dotenv').config();
 
 // const app = express();
 
@@ -58,12 +60,14 @@ const login = async (req, res)=>{
 
                 const comparePassword = await bcrypt.compare(password, user.password)
             if(!comparePassword){
+
               return  res.status(401).json({
                     message:"Invalid Credentials"
                 })
             }
+            const token = await jwt.sign({userId: user._id}, process.env.JWT_SECRET, {expiresIn:"1h"})
             return res.status(200).json({
-                message: 'login Successful'
+                message: 'login Successful', token
             })
             
         
@@ -180,4 +184,49 @@ const resetPassword = async(req, res)=>{
     }
 }
 
-module.exports= {signup, login, forgetPassword, resetPassword, /*verifyOtp, sendOtp*/}
+const changeToAdmin = async(req, res)=>{
+    const {email} = req.body;
+    try {
+        if(!email){
+            return res.status(400).json({
+                message:"Enter an email"
+            })
+        }
+        const user = await User.findOne({email})
+        if(!user){
+            return res.status(404).json({
+                message:"User not found"
+            })
+        }
+        const role = 'admin'
+        user.role = role
+        await user.save();
+        return res.status(200).json({email: email, role})
+    } catch (error) {
+        console.log(e)
+        return res.status(500).json({
+            message: "server error"
+        })
+    }
+}
+
+const getAllUsers = async (req, res)=> {
+    const {userId} = req.user;
+    try {
+        const adminUser = await User.findById(userId);
+        if(adminUser.role !== "admin"){
+            // console.log(adminUser)
+            return res.status(400).json({message:"You are not authorized"})
+        }
+        const users = await User.find().select('-password -otp -otpExpiry');
+        console.log(users)
+        return res.status(200).json(users)
+    } catch (error) {
+        console.log(`this is the error ${error}`)
+        return res.status(500).json({
+            message:"  Server Error"
+        })
+    }
+}
+
+module.exports= {signup, login, forgetPassword, resetPassword, changeToAdmin, getAllUsers /*verifyOtp, sendOtp*/}
