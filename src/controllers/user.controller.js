@@ -2,6 +2,7 @@
 const bcrypt = require('bcrypt');
 const User = require("../models/user.model");
 const jwt = require("jsonwebtoken");
+const sendEmail = require('../config/email');
 require('dotenv').config();
 
 // const app = express();
@@ -94,6 +95,11 @@ const forgetPassword = async (req, res)=>{
         const otp = Math.floor(100000 * Math.random() + 90000).toString();
         user.otp = otp;
         await user.save();
+        await sendEmail(
+            email,
+            'verify your account',
+            `Your otp is ${otp}, this otp will expire after 10 minutes, This is backend email sender test.`
+        )
         return res.status(200).json({message:"otp sent successfully", otp});
     } catch (error) {
         console.error('Error during forget password', error)
