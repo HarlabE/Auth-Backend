@@ -4,6 +4,8 @@ const User = require("../models/user.model");
 const jwt = require("jsonwebtoken");
 const sendEmail = require('../config/email');
 require('dotenv').config();
+const ejs = require('ejs');
+const path = require('path');
 
 // const app = express();
 
@@ -31,6 +33,19 @@ const signup = async (req, res)=>{
         });
 
         await newUser.save();
+        const templatePath = path.join(__dirname, '..', 'views', 'welcomeMessage.ejs');
+        await ejs.renderFile(templatePath, {userName : name},function  (err, template) {
+            if(err){
+                console.log('error ', err)
+            }
+            else{
+             sendEmail(
+            email,
+            'Welcome ',
+            template
+        )
+            }
+        })
         return res.status(201).json({
             message: "user created successfully"
         })
@@ -95,11 +110,19 @@ const forgetPassword = async (req, res)=>{
         const otp = Math.floor(100000 * Math.random() + 90000).toString();
         user.otp = otp;
         await user.save();
-        await sendEmail(
+        const templatePath = path.join(__dirname, '..', 'views', 'forgetPassword.ejs');
+        await ejs.renderFile(templatePath, {otp : otp} ,function  (err, template) {
+            if(err){
+                console.log('error ', err)
+            }
+            else{
+             sendEmail(
             email,
-            'verify your account',
-            `Your otp is ${otp}, this otp will expire after 10 minutes, This is backend email sender test.`
+            'Welcome ',
+            template
         )
+            }
+        })
         return res.status(200).json({message:"otp sent successfully", otp});
     } catch (error) {
         console.error('Error during forget password', error)

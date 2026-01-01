@@ -10,12 +10,14 @@ const transporter = nodemailer.createTransport({
     }
 })
 
-const sendEmail = async(to, subject, text)=>{
+const sendEmail = async(to, subject, html, text)=>{
+    const fallbackText = text || html.replace(/<[^>]*>?/gm, '');
     const mailOptions = {
         from: process.env.EMAIL_FROM,
         to,
         subject,
-        text,
+        text: fallbackText,
+        html,
     };
     await transporter.sendMail(mailOptions)
 
