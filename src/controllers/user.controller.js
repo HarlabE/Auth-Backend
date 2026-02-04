@@ -6,6 +6,7 @@ const sendEmail = require('../config/email');
 require('dotenv').config();
 const ejs = require('ejs');
 const path = require('path');
+const { cloudinary } = require('../config/cloudinary');
 
 // const app = express();
 
@@ -257,5 +258,30 @@ const getAllUsers = async (req, res)=> {
         })
     }
 }
+const uploadProfilePicture = async (req, res)=>{
+    const {userId }= req.user;
+    try{
+        if(!req.file){
+            return res.status(400).json({message: "No file uploaded"})
+        }
+        const user = await User.findById(userId);
+        if(!user){
+            return res.status(404).json({message: "User not found"})
+        }
+       const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: 'profile_pictures',
+            public_id: `user_${userId}_profile_picture`,
+        })
+        const profilePicture = result.secure_url;
+        user.profilePicture = profilePicture;
+        await user.save();
+        return res.status(200).json({message: "Profile picture uploaded successfully", profilePicture: profilePicture})
+    }catch(e){
+        console.error('Error uploading profile picture', e);
+        return res.status(500).json({
+            message: "Internal server error"
+        })
+}
+}
 
-module.exports= {signup, login, forgetPassword, resetPassword, changeToAdmin, getAllUsers /*verifyOtp, sendOtp*/}
+module.exports= {signup, login, forgetPassword, resetPassword, changeToAdmin, getAllUsers, uploadProfilePicture /*verifyOtp, sendOtp*/}
